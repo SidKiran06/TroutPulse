@@ -277,6 +277,20 @@ def main():
       .summary-sub{color:#eaf9ff;font-size:0.86rem;margin-top:6px}
       div[data-testid="stMetric"]{background:#123b4b;border-radius:12px;padding:14px;border:1px solid #27576c}
       div[data-testid="stMetric"] label, div[data-testid="stMetric"] div{color:white !important}
+      .tp-section-heading{font-size:1.03rem;font-weight:800;color:#0e6676;letter-spacing:.015em;margin:.3rem 0 .65rem}
+      .tp-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 20px}
+      .tp-feature{background:#123b4b;border:1px solid #2a6074;border-radius:14px;padding:18px 17px;min-height:133px}
+      .tp-feature-title{color:#fff !important;font-size:1.03rem;font-weight:800;margin:0 0 7px}
+      .tp-feature-copy{color:#e5f4f9 !important;font-size:.93rem;line-height:1.45;margin:0}
+      .tp-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#adf4df !important;margin-bottom:9px}
+      .tp-step-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 18px}
+      .tp-step{background:#e8f4f3;color:#173b43;border-radius:12px;border:1px solid #c7e6e3;padding:12px 13px;line-height:1.35}
+      .tp-step b{display:block;color:#0c4a53;margin-bottom:4px;font-size:.92rem}
+      .tp-step span{display:block;color:#24535d;font-size:.85rem}
+      .tp-evidence{border-left:5px solid #087a83;background:#e8f5f6;border-radius:10px;padding:15px 18px;margin:10px 0 18px;color:#183c45}
+      .tp-evidence strong{color:#075663}
+      @media(max-width:850px){.summary-card-row,.tp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-step-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:480px){.summary-card-row,.tp-feature-grid,.tp-step-row{grid-template-columns:1fr}.hero h1{font-size:30px}}
     </style>''', unsafe_allow_html=True)
     st.markdown('<div class="hero"><h1>🌊 TroutPulse AI</h1><p>See stream conditions. Compare monitoring priorities. Plan conservation fieldwork.</p></div>', unsafe_allow_html=True)
     try:
@@ -311,9 +325,66 @@ def main():
       <div class="summary-card"><div class="summary-label">Fair summer comparison years</div><div class="summary-value">{comparison_text}</div><div class="summary-sub">Only overlapping summers with enough data</div></div>
     </div>''', unsafe_allow_html=True)
 
-    map_tab, focus_tab, explore_tab, thermal_tab, action_tab, obs_tab, model_tab, source_tab = st.tabs([
-        '🗺️ Map', '📍 Where to Focus', '📈 Stream Explorer', '🌡️ Thermal Watch',
+    demo_tab, map_tab, focus_tab, explore_tab, thermal_tab, action_tab, obs_tab, model_tab, source_tab = st.tabs([
+        '🎬 Start Here', '🗺️ Map', '📍 Where to Focus', '📈 Stream Explorer', '🌡️ Thermal Watch',
         '🌱 Action Planner', '📸 Observations', '🧠 Weather & AI', '🔎 Sources'])
+
+    with demo_tab:
+        st.subheader('TroutPulse AI — prototype highlights')
+        st.write('**Our goal:** Help watershed volunteers know **which monitored stream deserves a closer look, when to visit, and what to check**—using real temperature data rather than guesswork.')
+        st.markdown('''<div class="tp-feature-grid">
+          <div class="tp-feature"><div class="tp-tag">01 · Explore</div><div class="tp-feature-title">🗺️ Interactive stream map</div><p class="tp-feature-copy">Find eight monitored Pennsylvania streams. Tap a station for temperature evidence and a plain-language monitoring recommendation.</p></div>
+          <div class="tp-feature"><div class="tp-tag">02 · Understand</div><div class="tp-feature-title">🌡️ Thermal Watch</div><p class="tp-feature-copy">Compare summer days reaching the selected water-temperature threshold. Find patterns worth checking, not diagnoses of fish health.</p></div>
+          <div class="tp-feature"><div class="tp-tag">03 · Prioritize</div><div class="tp-feature-title">📍 Where to Focus</div><p class="tp-feature-copy">Separate recent concerns, next-week weather-based monitoring plans, and longer-term summer investigations.</p></div>
+          <div class="tp-feature"><div class="tp-tag">04 · Plan</div><div class="tp-feature-title">🌱 Conservation Action Planner</div><p class="tp-feature-copy">Turn data and field observations into suggestions such as checking shade, cooler tributaries, streambank erosion, or possible riparian buffers.</p></div>
+          <div class="tp-feature"><div class="tp-tag">05 · Record</div><div class="tp-feature-title">📸 Community Observations</div><p class="tp-feature-copy">Log fish sightings, water clarity, erosion, and field notes. Export the log as a CSV; entries are not shared or permanently stored yet.</p></div>
+          <div class="tp-feature"><div class="tp-tag">06 · Test</div><div class="tp-feature-title">🧠 Weather & AI</div><p class="tp-feature-copy">Combine water and weather data to test next-day estimates, then compare the AI model with a simpler prediction method.</p></div>
+        </div>''', unsafe_allow_html=True)
+        st.markdown('''<div class="tp-section-heading">HOW A VOLUNTEER COULD USE TROUTPULSE</div>
+        <div class="tp-step-row">
+          <div class="tp-step"><b>1. Spot a pattern</b><span>Compare measured warm-day frequencies across monitoring stations.</span></div>
+          <div class="tp-step"><b>2. Choose a field check</b><span>Prioritize a summer visit where repeated warming deserves investigation.</span></div>
+          <div class="tp-step"><b>3. Collect evidence</b><span>Measure nearby stream sections, check shade and potential cool inflows.</span></div>
+          <div class="tp-step"><b>4. Plan with experts</b><span>Discuss monitoring or restoration options with local watershed partners.</span></div>
+        </div>''', unsafe_allow_html=True)
+        st.caption('Temperature patterns flag locations to investigate. The app does not decide that a planting or restoration project is appropriate without field measurements, site conditions, and expert review.')
+        if common_years and not compared.empty:
+            highest = compared.iloc[0]
+            lowest = compared.iloc[-1]
+            yr = ', '.join(str(y) for y in common_years)
+            warm_limit_f = threshold * 9 / 5 + 32
+            lcol, rcol = st.columns(2)
+            with lcol:
+                st.metric('Most frequent warm-day readings',
+                          highest['Stream'].split(' near ')[0].split(' below ')[0],
+                          f"{int(highest['Warm days'])} of {int(highest['Days measured'])} summer days", delta_color='off')
+            with rcol:
+                st.metric('Fewest warm-day readings',
+                          lowest['Stream'].split(' near ')[0],
+                          f"{int(lowest['Warm days'])} of {int(lowest['Days measured'])} summer days", delta_color='off')
+            st.caption(f'Days with a measured daily maximum at or above {threshold:g}°C ({warm_limit_f:.0f}°F), during June–August of {yr}. A flagged temperature does not prove brook trout were present or harmed.')
+            graph = compared.sort_values('% warm days', ascending=True)
+            b = go.Figure(go.Bar(x=graph['% warm days'], y=graph['Stream'], orientation='h',
+                                 text=[f"{r['% warm days']:.1f}% ({int(r['Warm days'])}/{int(r['Days measured'])})" for _, r in graph.iterrows()],
+                                 textposition='outside', marker_color='#128b96'))
+            b.update_layout(height=370, margin=dict(l=8,r=75,t=16,b=10),
+                            xaxis=dict(title=f'% of measured summer days ≥ {threshold:g}°C', range=[0,112]),
+                            yaxis_title=None)
+            st.plotly_chart(b, use_container_width=True)
+            st.markdown('**From measurements to conservation priorities**')
+            hottest_name = escape(str(highest['Stream']))
+            coolest_name = escape(str(lowest['Stream']))
+            st.markdown(f'''<div class="tp-evidence"><strong>Suggested summer fieldwork priority: {hottest_name}.</strong>
+            Its monitoring station recorded frequent warm summer daily maxima. Volunteers could check upstream and downstream temperatures, compare possible cooler tributary inflows, and document streamside shade during safe, planned visits.</div>''', unsafe_allow_html=True)
+            st.write(f"**Comparison site: {lowest['Stream']}.** The gauge showed fewer flagged summer days, making it useful for comparing temperature patterns—not proof that its habitat is healthy.")
+            st.write('**If shade is limited or erosion is visible:** Record those conditions in Community Observations and consult landowners, watershed groups, and conservation specialists before considering planting or streambank projects.')
+        else:
+            st.info('A fair summer comparison requires enough shared summer dates across all eight stations.')
+        st.markdown('**Quick TV demonstration (three steps)**')
+        st.write('**1. Show the finding:** Point to the warm-day comparison above, then open Map and tap a station.')
+        st.write('**2. Show the decision:** Open Where to Focus and Action Planner. Select few streamside trees or a possible cool tributary to show how suggested field checks change.')
+        st.write('**3. Show the testing:** Open Weather & AI and compare model error against the simple baseline. Explain that the forecast capability is still being improved.')
+        st.caption('Currently working: eight-station measured-data comparisons, map, thermal screening, fieldwork suggestions, and session-only volunteer observations. Planned or still being validated: reliable next-day water-temperature forecasts, statewide site-specific planting recommendations, and permanent shared observation storage.')
 
     with map_tab:
         st.subheader('Watershed monitoring map')
