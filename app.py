@@ -126,22 +126,44 @@ def station_priority(part: pd.DataFrame, threshold: float, today: date, forecast
             'summer_pct': summer_pct, 'recent_warm': recent_warm}
 
 
-def build_map(priorities: dict, window: str):
-    m = folium.Map(location=[40.8, -77.1], zoom_start=7, tiles='OpenStreetMap', control_scale=True)
+def build_map(priorities: dict, window: str, daily: pd.DataFrame, threshold: float):
+    """Water-focused map with clearer popups and a richer tooltip."""
+    m = folium.Map(location=[40.8, -77.1], zoom_start=7, tiles=None, control_scale=True)
+    # Water / terrain friendly basemaps
+    folium.TileLayer('OpenTopoMap', name='Terrain & water', control=True).add_to(m)
+    folium.TileLayer('CartoDB positron', name='Light map', control=True).add_to(m)
+    folium.TileLayer('OpenStreetMap', name='Street map', control=True).add_to(m)
     key = {'Now': ('now', 'now_type'), 'Next 7 Days': ('week', 'week_type'),
            'Long Term': ('long', 'long_type')}[window]
     for sid, (name, lat, lon) in STATIONS.items():
         row = priorities[sid]
+        station_daily = daily[daily.site_id == sid].sort_values('date')
+        latest = station_daily.iloc[-1]
+        recent_days = int(((station_daily.date >= station_daily.date.max() - pd.Timedelta(days=6)) &
+                           (station_daily.water_temp_max_C >= threshold)).sum())
+        summer = station_daily[station_daily.date.dt.month.isin([6, 7, 8])]
+        summer_pct = None
+        if len(summer):
+            summer_pct = round(100 * float((summer.water_temp_max_C >= threshold).mean()), 1)
         color = COLORS[row[key[1]]]
         text = escape(row[key[0]])
-        popup = (f'<div style="font:14px Arial;width:250px;color:#1b3445">'
-                 f'<b>{escape(name)}</b><br>USGS {escape(sid)}<hr>{text}'
-                 f'<p><a target="_blank" rel="noopener noreferrer" '
-                 f'href="https://waterdata.usgs.gov/monitoring-location/{sid}/">View source at USGS</a></p></div>')
+        summary_lines = [
+            f'<b>{escape(name)}</b>',
+            f'USGS: {escape(sid)}',
+            f'Latest daily max: {latest.water_temp_max_C:.1f}°C on {latest.date.date()}',
+            f'Recent flagged days (7d lookback): {recent_days}',
+            f'Summer warm-day rate: {summer_pct:.1f}%' if summer_pct is not None else 'Summer warm-day rate: unavailable',
+            f'<b>{escape(window)} priority:</b> {text}'
+        ]
+        popup = ('<div style="font:14px Arial;width:280px;color:#173042;line-height:1.45">' +
+                 '<br>'.join(summary_lines) +
+                 f'<hr><a target="_blank" rel="noopener noreferrer" href="https://waterdata.usgs.gov/monitoring-location/{sid}/">Open official USGS station page</a></div>')
+        tooltip = f'{name} | latest max {latest.water_temp_max_C:.1f}°C | {row[key[0]]}'
         folium.CircleMarker([lat, lon], radius=10, color='white', weight=2,
                             fill=True, fill_color=color, fill_opacity=.95,
-                            tooltip=f'{name}: {row[key[0]]}',
-                            popup=folium.Popup(popup, max_width=320)).add_to(m)
+                            tooltip=tooltip,
+                            popup=folium.Popup(popup, max_width=340)).add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[39.65, -79.6], [41.7, -75.4]])
     return m
 
@@ -246,9 +268,15 @@ def main():
     st.set_page_config(page_title='TroutPulse AI', page_icon='🌊', layout='wide')
     st.markdown('''<style>
       .block-container{max-width:1250px;padding-top:1.4rem}
-      div[data-testid="stMetric"]{background:#123b4b;color:white;padding:14px;border-radius:12px}
       .hero{border-radius:18px;padding:24px 28px;color:white;margin-bottom:18px;background:linear-gradient(110deg,#0d3545,#116269)}
       .hero h1{margin:0;color:white;font-size:42px}.hero p{color:#dbf7f5;margin-bottom:0}
+      .summary-card-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:10px 0 18px 0}
+      .summary-card{background:#123b4b;border-radius:14px;padding:14px 16px;border:1px solid #27576c;min-height:92px}
+      .summary-label{color:#d6eef4;font-size:0.92rem;margin-bottom:8px;font-weight:600}
+      .summary-value{color:#ffffff;font-size:1.5rem;font-weight:800;line-height:1.1}
+      .summary-sub{color:#eaf9ff;font-size:0.86rem;margin-top:6px}
+      div[data-testid="stMetric"]{background:#123b4b;border-radius:12px;padding:14px;border:1px solid #27576c}
+      div[data-testid="stMetric"] label, div[data-testid="stMetric"] div{color:white !important}
     </style>''', unsafe_allow_html=True)
     st.markdown('<div class="hero"><h1>🌊 TroutPulse AI</h1><p>See stream conditions. Compare monitoring priorities. Plan conservation fieldwork.</p></div>', unsafe_allow_html=True)
     try:
@@ -274,11 +302,14 @@ def main():
                   for sid, data in station_data.items()}
     compared, common_years = common_summer_comparison(daily, threshold)
     last = station_data[selected].iloc[-1]
-    cols = st.columns(4)
-    cols[0].metric('Measured stations', str(len(STATIONS)))
-    cols[1].metric('Daily measurements', f'{len(daily):,}')
-    cols[2].metric('Most recent downloaded day', str(daily.date.max().date()))
-    cols[3].metric('Comparison years', ', '.join(map(str, common_years)) or 'Unavailable')
+    comparison_text = ', '.join(map(str, common_years)) or 'Unavailable'
+    st.markdown(f'''
+    <div class="summary-card-row">
+      <div class="summary-card"><div class="summary-label">Measured stations</div><div class="summary-value">{len(STATIONS)}</div><div class="summary-sub">All eight have verified USGS daily temperatures</div></div>
+      <div class="summary-card"><div class="summary-label">Daily measurements</div><div class="summary-value">{len(daily):,}</div><div class="summary-sub">Daily min, mean, and max water temperatures</div></div>
+      <div class="summary-card"><div class="summary-label">Most recent downloaded day</div><div class="summary-value">{daily.date.max().date()}</div><div class="summary-sub">Saved USGS daily export snapshot</div></div>
+      <div class="summary-card"><div class="summary-label">Fair summer comparison years</div><div class="summary-value">{comparison_text}</div><div class="summary-sub">Only overlapping summers with enough data</div></div>
+    </div>''', unsafe_allow_html=True)
 
     map_tab, focus_tab, explore_tab, thermal_tab, action_tab, obs_tab, model_tab, source_tab = st.tabs([
         '🗺️ Map', '📍 Where to Focus', '📈 Stream Explorer', '🌡️ Thermal Watch',
@@ -287,10 +318,27 @@ def main():
     with map_tab:
         st.subheader('Watershed monitoring map')
         period = st.radio('View priorities for', ['Now', 'Next 7 Days', 'Long Term'], horizontal=True, key='mapperiod')
-        st.caption('Dots mark USGS sensors, NOT full stream health or proposed planting sites. Next-week colors need a forecast.')
-        mp = build_map(priorities, period)
-        components.html(mp.get_root().render(), height=540, scrolling=False)
-        st.caption('Map base © OpenStreetMap contributors; markers and data from official USGS station exports.')
+        st.caption('This map is for stream-monitoring decisions. Click a station to see the latest temperature, warm-day history, and what volunteers should investigate next.')
+        mp = build_map(priorities, period, daily, threshold)
+        components.html(mp.get_root().render(), height=560, scrolling=False)
+        rows = []
+        for sid, (name, _, _) in STATIONS.items():
+            series = station_data[sid].sort_values('date')
+            latest = series.iloc[-1]
+            recent_flagged = int(((series.date >= series.date.max() - pd.Timedelta(days=6)) & (series.water_temp_max_C >= threshold)).sum())
+            summer = series[series.date.dt.month.isin([6, 7, 8])]
+            summer_pct = round(100 * float((summer.water_temp_max_C >= threshold).mean()), 1) if len(summer) else np.nan
+            rows.append({
+                'Stream': name,
+                'Latest daily max (°C)': round(float(latest.water_temp_max_C), 1),
+                'Latest measurement': str(latest.date.date()),
+                'Recent flagged days (7d)': recent_flagged,
+                'Summer warm-day %': summer_pct,
+                f'{period} message': priorities[sid][{'Now':'now','Next 7 Days':'week','Long Term':'long'}[period]]
+            })
+        st.markdown('**Map summary table**')
+        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+        st.caption('Default basemap is OpenTopoMap so water and terrain are easier to read. Marker colors show monitoring priority, not proof of stream damage or planting locations.')
 
     with focus_tab:
         st.subheader('Where should volunteers focus?')
