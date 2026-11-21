@@ -266,72 +266,102 @@ def main():
     import streamlit.components.v1 as components
 
     st.set_page_config(page_title='WatershedPulse AI | Pennsylvania', page_icon='🌊', layout='wide', initial_sidebar_state='expanded')
+    # Compact, icon-only navigation follows the South Fayette FBLA dashboard reference.
+    # All styling lives here: only app.py needs to be updated on GitHub.
     st.markdown('''<style>
-      :root {--pa-navy:#132D50;--pa-deep:#0B203B;--pa-gold:#E2BA6D;--pa-gold-dark:#A17625;--pa-water:#187A86;--pa-ink:#183450;--pa-pale:#F5F7FB}
-      .stApp {background:var(--pa-pale)}
-      /* Keep ordinary prose readable even when a visitor's Streamlit theme is dark. */
-      div[data-testid="stMain"]{color:#193852}
-      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>p,
-      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>ul,
-      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>ol{color:#26465e!important}
-      div[data-testid="stMain"] h1,div[data-testid="stMain"] h2,div[data-testid="stMain"] h3{color:#193852}
-      div[data-testid="stMain"] [data-testid="stCaptionContainer"]{color:#526c80!important}
-      div[data-testid="stMain"] a{color:#166777}
-      .block-container{max-width:1250px;padding-top:1.4rem;padding-bottom:2.2rem}
-      /* South Fayette-style left navigation, in a PA flag-inspired palette. */
-      section[data-testid="stSidebar"]{background:linear-gradient(180deg,#102846 0%,#193D64 100%)!important;border-right:3px solid var(--pa-gold)}
-      section[data-testid="stSidebar"] *:not(svg):not(path){color:#F4F8FF}
-      section[data-testid="stSidebar"] div[role="radiogroup"]>label{padding:9px 11px;margin:2px 0;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:background .15s}
-      section[data-testid="stSidebar"] div[role="radiogroup"]>label:hover{background:rgba(255,255,255,.10)}
-      section[data-testid="stSidebar"] div[role="radiogroup"]>label:has(input:checked){background:#355273;border:1px solid #D8B56D;box-shadow:inset 4px 0 0 #E2BA6D}
-      section[data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.24)}
-      section[data-testid="stSidebar"] .side-brand .mini,
-      section[data-testid="stSidebar"] .sidebar-heading{color:#EACA91!important}
-      div[data-testid="stMain"] button[data-testid="stBaseButton-primary"]{background:#173B5D!important;color:white!important;border:1px solid #E2BA6D!important}
-      div[data-testid="stMain"] button[data-testid="stBaseButton-primary"]:hover{background:#245378!important}
-      .side-brand{background:rgba(255,255,255,.06);padding:17px 13px;border:1px solid rgba(226,186,109,.42);border-radius:14px;margin:1px 0 16px}
-      .side-brand .name{font-weight:900;letter-spacing:.015em;font-size:1.4rem;color:white}
-      .side-brand .mini{font-weight:700;font-size:.74rem;color:#EACA91;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-      .side-brand .sub{font-size:.82rem;color:#E4ECF7;line-height:1.45;margin-top:6px}
-      .sidebar-heading{color:#E5BE79;font-size:.72rem;font-weight:800;letter-spacing:.1em;margin:14px 0 6px}
-      .hero{border-radius:18px;padding:26px 30px;color:#FFF;margin-bottom:15px;position:relative;overflow:hidden;background:linear-gradient(110deg,#122C4F,#1B4F66);border-bottom:5px solid #DAB267}
-      .hero:after{content:'◆';position:absolute;right:25px;top:-38px;font-size:8.5rem;color:rgba(229,189,107,.17);pointer-events:none}
-      .hero h1{margin:0;color:#FFF!important;font-size:2.35rem;line-height:1.2;letter-spacing:-.02em}
-      .hero p{color:#DFEBF5!important;margin:.65rem 0 0;max-width:720px}
-      .hero .eyebrow{color:#F6D396!important;font-size:.77rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;margin-bottom:9px}
-      .page-header{margin:8px 0 20px;padding:5px 0 15px;border-bottom:2px solid #E5C27D}
-      .page-header .eyebrow{color:#976B21;font-size:.77rem;font-weight:900;letter-spacing:.13em}
-      .page-header h1{font-size:2rem;color:#183453!important;margin:5px 0!important}
-      .page-header p{color:#50687B!important;font-size:.95rem;margin:0}
-      .summary-card-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:10px 0 23px}
-      .summary-card{background:#142F4E;border:1px solid #325273;border-top:4px solid #E2BA6D;border-radius:12px;padding:15px 16px;min-height:122px}
-      .summary-label{color:#E6EFF9!important;font-size:.86rem;line-height:1.35;font-weight:700}
-      .summary-value{color:white!important;font-size:1.52rem;font-weight:850;line-height:1.2;margin:8px 0}
-      .summary-sub{color:#D4E4F0!important;font-size:.77rem;line-height:1.3}
-      div[data-testid="stMetric"]{background:#142F4E;border-radius:12px;padding:14px;border-top:4px solid #E2BA6D}
-      div[data-testid="stMetric"] label,div[data-testid="stMetric"] div,div[data-testid="stMetric"] p{color:white!important}
-      .tp-section-heading{font-size:1.03rem;font-weight:850;color:#163E64;letter-spacing:.01em;margin:.45rem 0 .7rem}
-      .tp-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:12px 0 23px}
-      .tp-feature{background:#FFF;border:1px solid #DAE3EC;border-top:4px solid #DAB267;border-radius:13px;padding:17px;min-height:145px;box-shadow:0 3px 10px rgba(27,48,72,.05)}
-      .tp-feature-title{color:#183653!important;font-size:1.07rem;font-weight:850;margin:0 0 8px}
-      .tp-feature-copy{color:#4E6478!important;font-size:.90rem;line-height:1.48;margin:0}
-      .tp-tag{display:inline-block;font-size:.7rem;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:#937022!important;margin-bottom:8px}
+      :root {--pa-navy:#071743;--pa-blue:#173E7A;--pa-gold:#D9B571;--bg:#191B20;
+        --panel:#24272D;--outline:#363B45;--ink:#F1F3F7;--muted:#B0B9C7}
+      html,body,[data-testid="stApp"],.stApp{background:#191B20!important;color:var(--ink)!important}
+      [data-testid="stMain"]{min-width:0;background:var(--bg);color:var(--ink)}
+      [data-testid="stMain"] h1,[data-testid="stMain"] h2,[data-testid="stMain"] h3,
+      [data-testid="stMain"] h4,[data-testid="stMain"] strong{color:#F6F8FC!important}
+      [data-testid="stMain"] [data-testid="stMarkdownContainer"]>p,
+      [data-testid="stMain"] [data-testid="stMarkdownContainer"]>ul,
+      [data-testid="stMain"] [data-testid="stMarkdownContainer"]>ol{color:#DDE3EC!important}
+      [data-testid="stMain"] [data-testid="stCaptionContainer"]{color:#A6B1C0!important}
+      [data-testid="stMain"] a{color:#9BBEF7}
+      .block-container{max-width:1450px;padding-top:1.15rem;padding-bottom:1.7rem;padding-left:1.65rem;padding-right:1.65rem}
+      /* The sidebar is a thin navigation rail (not a panel that covers the content). */
+      section[data-testid="stSidebar"]{width:73px!important;min-width:73px!important;max-width:73px!important;
+        flex:0 0 73px!important;background:linear-gradient(180deg,#081A50,#07133C)!important;
+        border-right:1px solid #31528D!important;overflow:visible!important}
+      section[data-testid="stSidebar"]>div{width:73px!important;min-width:73px!important;max-width:73px!important}
+      section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"]{width:73px!important;
+        min-width:73px!important;padding:32px 9px 14px!important;overflow-x:hidden!important}
+      section[data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:.26rem!important}
+      section[data-testid="stSidebar"] .stButton{width:100%!important;margin:0!important}
+      section[data-testid="stSidebar"] .stButton button{width:100%!important;min-height:39px!important;
+        height:39px!important;display:flex!important;justify-content:center!important;align-items:center!important;
+        padding:1px!important;font-size:1.2rem!important;border-radius:9px!important;
+        box-shadow:none!important;line-height:1!important;color:white!important}
+      section[data-testid="stSidebar"] .stButton button[kind="secondary"]{background:transparent!important;border:1px solid transparent!important}
+      section[data-testid="stSidebar"] .stButton button[kind="secondary"]:hover{background:#163C83!important;border-color:#36599B!important}
+      section[data-testid="stSidebar"] .stButton button[kind="primary"]{background:#2055A1!important;border:1px solid #4C7DC7!important;
+        box-shadow:inset 3px 0 0 var(--pa-gold)!important}
+      section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+      section[data-testid="stSidebar"] [data-testid="stSidebarCollapsedControl"]{display:none!important}
+      .rail-brand{text-align:center;padding:6px 0 10px;font-size:1.35rem;color:#fff}
+      .rail-brand small{display:block;font-weight:900;letter-spacing:.09em;color:#E2BC72;font-size:.55rem;margin-top:3px}
+      .rail-rule{height:1px;background:rgba(200,219,250,.22);margin:9px 2px}
+      /* Main area modeled on the compact dark cards of the reference screenshot. */
+      .topline{color:#B6C5DC;font-size:.76rem;letter-spacing:.13em;font-weight:800;padding-top:8px}
+      .topline b{color:#DDBB78!important}
+      .hero{background:#21252C;border:1px solid #42454C;border-radius:12px;padding:23px 25px;
+        margin-bottom:13px;position:relative;overflow:hidden}
+      .hero:after{content:'◈';position:absolute;right:25px;top:-34px;font-size:8rem;color:rgba(223,182,106,.08);pointer-events:none}
+      .hero h1{font-size:2rem;margin:2px 0 7px;color:#FFF!important;letter-spacing:-.025em}
+      .hero p{color:#C8D3E0!important;font-size:.94rem;line-height:1.5;margin:0;max-width:720px}
+      .hero .eyebrow{color:#DCB572!important;font-size:.7rem;letter-spacing:.1em;font-weight:800;margin-bottom:9px;text-transform:uppercase}
+      .page-header{padding:9px 0 14px;border-bottom:1px solid #42454D;margin-bottom:15px}
+      .page-header .eyebrow{color:#DDBB7B;font-size:.68rem;letter-spacing:.12em;font-weight:850}
+      .page-header h1{font-size:1.85rem;margin:4px 0!important;color:#fff!important}
+      .page-header p{color:#B1BDCC!important;font-size:.92rem;margin:0}
+      .summary-card-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 18px}
+      .summary-card{background:#0E1D3A;border:1px solid #31446A;border-radius:11px;padding:14px 15px;min-height:105px;overflow:hidden}
+      .summary-label{color:#D4DEED!important;font-size:.8rem;line-height:1.3;font-weight:650}
+      .summary-value{color:#FFF!important;font-size:1.55rem;font-weight:850;line-height:1.15;margin:7px 0}
+      .summary-sub{color:#BACBDD!important;font-size:.73rem;line-height:1.3}
+      div[data-testid="stMetric"]{background:#0E1D3A;border:1px solid #31446A;border-radius:11px;padding:14px}
+      div[data-testid="stMetric"] label,div[data-testid="stMetric"] div,div[data-testid="stMetric"] p{color:#F3F7FC!important}
+      .tp-section-heading{color:#E6EAF1;font-size:.97rem;letter-spacing:.04em;font-weight:850;margin:17px 0 10px}
+      .tp-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 22px}
+      .tp-feature{background:#24272D;border:1px solid #41454C;border-radius:11px;padding:15px;min-height:140px}
+      .tp-feature-title{color:#F4F7FA!important;font-size:1rem;font-weight:800;margin:0 0 7px}
+      .tp-feature-copy{color:#B9C4D0!important;font-size:.86rem;line-height:1.45;margin:0}
+      .tp-tag{display:inline-block;color:#E3B972!important;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
       .tp-step-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 20px}
-      .tp-step{background:#EAF1F8;border:1px solid #D2DFEB;color:#173C59;border-radius:12px;padding:13px;line-height:1.4}
-      .tp-step b{display:block;color:#133D64;margin-bottom:5px;font-size:.94rem}
-      .tp-step span{display:block;color:#355D74;font-size:.85rem}
-      .tp-evidence{border-left:5px solid #C69B46;background:#FFF8E9;border-radius:9px;padding:16px 19px;margin:13px 0 20px;color:#334B5A}
-      .tp-evidence strong{color:#5E441F}
-      .resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0 23px}
-      .resource-card{background:#fff;border:1px solid #d7e0eb;border-left:5px solid #DAB267;border-radius:12px;padding:18px 20px;box-shadow:0 4px 14px rgba(20,47,79,.045)}
-      .resource-card .org{font-size:.72rem;letter-spacing:.08em;color:#8C661F!important;text-transform:uppercase;font-weight:850;margin-bottom:5px}
-      .resource-card .title{color:#183653!important;font-size:1.12rem;font-weight:850;margin-bottom:8px}
-      .resource-card .desc{color:#4F6579!important;line-height:1.45;font-size:.90rem}
-      .resource-card a{display:inline-block;color:#12677A!important;margin-top:13px;font-weight:800;text-decoration:none}
+      .tp-step{background:#212A37;border:1px solid #414A58;border-radius:11px;padding:12px;line-height:1.4}
+      .tp-step b{display:block;color:#FFF;margin-bottom:6px;font-size:.89rem}
+      .tp-step span{display:block;color:#B8C7D8;font-size:.82rem}
+      .tp-evidence{border:1px solid #735A34;border-left:4px solid var(--pa-gold);background:#29271F;border-radius:9px;padding:15px 17px;margin:12px 0 18px;color:#E7E0D2}
+      .tp-evidence strong{color:#FFE0A6!important}
+      .resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0 20px}
+      .resource-card{background:#24272D;border:1px solid #41454C;border-radius:11px;padding:17px 18px}
+      .resource-card .org{font-size:.70rem;letter-spacing:.08em;color:#E3BD7C!important;text-transform:uppercase;font-weight:850;margin-bottom:7px}
+      .resource-card .title{color:#F4F7FA!important;font-size:1.06rem;font-weight:850;margin-bottom:8px}
+      .resource-card .desc{color:#B9C4D1!important;line-height:1.42;font-size:.88rem}
+      .resource-card a{display:inline-block;color:#B7D3FF!important;margin-top:13px;font-weight:800;text-decoration:none}
       .resource-card a:hover{text-decoration:underline}
-      @media(max-width:950px){.summary-card-row{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-step-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:620px){.resource-grid{grid-template-columns:1fr}.hero{padding:22px}.hero h1{font-size:1.75rem}}
-      @media(max-width:480px){.summary-card-row,.tp-feature-grid,.tp-step-row{grid-template-columns:1fr}}
+      [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]>div{border-color:#40454E!important}
+      [data-testid="stMain"] button[data-testid="stBaseButton-primary"]{background:#214A8F!important;color:white!important;border:1px solid #527FC6!important}
+      [data-testid="stMain"] button[data-testid="stBaseButton-primary"]:hover{background:#2C5CAC!important}
+      /* Keep the content 2-across on phones, as in the FBLA reference. */
+      @media(max-width:1000px){.summary-card-row,.tp-feature-grid,.tp-step-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:650px){
+        section[data-testid="stSidebar"]{width:62px!important;min-width:62px!important;max-width:62px!important;position:fixed!important;
+          left:0!important;top:0!important;bottom:0!important;transform:none!important;z-index:998!important}
+        section[data-testid="stSidebar"]>div,section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"]{width:62px!important;min-width:62px!important;max-width:62px!important}
+        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"]{padding:31px 6px 12px!important}
+        [data-testid="stMain"]{margin-left:62px!important;width:calc(100% - 62px)!important;min-width:0!important}
+        .block-container{padding:10px 10px 20px!important;max-width:100%!important}
+        .summary-card-row,.tp-feature-grid{gap:8px}
+        .summary-card{padding:12px 10px;min-height:96px}.summary-label{font-size:.72rem}
+        .summary-value{font-size:1.2rem}.summary-sub{font-size:.67rem}
+        .hero{padding:17px}.hero h1{font-size:1.6rem}
+        .resource-grid{grid-template-columns:1fr}.tp-feature{padding:12px}.tp-feature-title{font-size:.91rem}.tp-feature-copy{font-size:.78rem}
+        .page-header h1{font-size:1.45rem}.page-header p{font-size:.8rem}
+      }
+      @media(max-width:360px){.summary-card-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>''', unsafe_allow_html=True)
     try:
         daily, sensors = load_data()
@@ -352,21 +382,31 @@ def main():
         '📚 Pennsylvania Resources',
         '🔎 Data Sources',
     ]
+    if 'nav_page' not in st.session_state or st.session_state['nav_page'] not in pages:
+        st.session_state['nav_page'] = pages[0]
     with st.sidebar:
-        st.markdown('''<div class="side-brand"><div class="mini">Pennsylvania · Freshwater Ecosystems</div>
-          <div class="name">🌊 WatershedPulse AI</div>
-          <div class="sub">Explore stream data. Prioritize field checks. Support smarter conservation.</div></div>''', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-heading">APP NAVIGATION</div>', unsafe_allow_html=True)
-        page = st.radio('Explore WatershedPulse', pages, label_visibility='collapsed', key='watershed_page')
-        st.divider()
-        st.markdown('<div class="sidebar-heading">MONITORING SETTINGS</div>', unsafe_allow_html=True)
-        threshold = st.slider('Warm-water screening threshold', 15.0, 26.0, 20.0, .5, format='%.1f°C')
-        selected = st.selectbox('USGS monitoring station', list(STATIONS),
-                                format_func=lambda key: STATIONS[key][0])
-        st.caption('The threshold is an adjustable research screen, not a universal limit for freshwater species.')
-        st.divider()
-        st.caption('8 measured USGS sites · Pennsylvania fieldwork prototype')
-        st.markdown('[USGS Water Data](https://waterdata.usgs.gov/explore/)  ·  [PA Fish & Boat](https://www.pa.gov/agencies/fishandboat/conservation)')
+        st.markdown('<div class="rail-brand">🌊<small>PA</small></div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-rule"></div>', unsafe_allow_html=True)
+        for idx, label in enumerate(pages):
+            icon = label.split(' ', 1)[0]
+            active = st.session_state['nav_page'] == label
+            if st.button(icon, key=f'rail_nav_{idx}', help=label.split(' ', 1)[1],
+                         type='primary' if active else 'secondary', use_container_width=True):
+                st.session_state['nav_page'] = label
+        st.markdown('<div class="rail-rule"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-brand" style="font-size:.95rem;padding-top:0">★</div>', unsafe_allow_html=True)
+    page = st.session_state['nav_page']
+
+    # Larger monitoring controls live in a popover so they never block the dashboard.
+    bar_left, bar_right = st.columns([3.5, 1.3], vertical_alignment='center')
+    with bar_left:
+        st.markdown('<div class="topline"><b>PA</b> / FRESHWATER INTELLIGENCE</div>', unsafe_allow_html=True)
+    with bar_right:
+        with st.popover('⚙️ Filters', use_container_width=True):
+            threshold = st.slider('Warm-water screening threshold', 15.0, 26.0, 20.0, .5, format='%.1f°C', key='warm_threshold')
+            selected = st.selectbox('USGS monitoring station', list(STATIONS),
+                                    format_func=lambda key: STATIONS[key][0], key='selected_station')
+            st.caption('Thresholds flag investigation needs, not confirmed harm to aquatic life.')
 
     station_data = {sid: daily[daily.site_id == sid].copy() for sid in STATIONS}
     forecasts = st.session_state.get('forecasts', {})
@@ -415,7 +455,7 @@ def main():
           <div class="tp-feature"><div class="tp-tag">05 · Record</div><div class="tp-feature-title">📸 Community Observations</div><p class="tp-feature-copy">Log fish sightings, water clarity, erosion, and field notes. Export the log as a CSV; entries are not shared or permanently stored yet.</p></div>
           <div class="tp-feature"><div class="tp-tag">06 · Test</div><div class="tp-feature-title">🧠 Weather & AI</div><p class="tp-feature-copy">Combine water and weather data to test next-day estimates, then compare the AI model with a simpler prediction method.</p></div>
         </div>''', unsafe_allow_html=True)
-        st.markdown('''<div class="tp-section-heading">HOW A VOLUNTEER COULD USE TROUTPULSE</div>
+        st.markdown('''<div class="tp-section-heading">HOW A VOLUNTEER COULD USE WATERSHEDPULSE</div>
         <div class="tp-step-row">
           <div class="tp-step"><b>1. Spot a pattern</b><span>Compare measured warm-day frequencies across monitoring stations.</span></div>
           <div class="tp-step"><b>2. Choose a field check</b><span>Prioritize a summer visit where repeated warming deserves investigation.</span></div>
@@ -445,6 +485,7 @@ def main():
             b.update_layout(height=370, margin=dict(l=8,r=75,t=16,b=10),
                             xaxis=dict(title=f'% of measured summer days ≥ {threshold:g}°C', range=[0,112]),
                             yaxis_title=None)
+            b.update_layout(template='plotly_dark', paper_bgcolor='#191B20', plot_bgcolor='#24272D', font_color='#E1E6ED')
             st.plotly_chart(b, use_container_width=True)
             st.markdown('**From measurements to conservation priorities**')
             hottest_name = escape(str(highest['Stream']))
@@ -539,12 +580,14 @@ def main():
             fig.add_trace(go.Scatter(x=part.date, y=part[col], name=label, mode='lines'))
         fig.add_hline(y=threshold, line_dash='dash', annotation_text=f'{threshold:g}°C screen')
         fig.update_layout(height=385, yaxis_title='Water temperature (°C)', margin=dict(l=5,r=5,t=12,b=8))
+        fig.update_layout(template='plotly_dark', paper_bgcolor='#191B20', plot_bgcolor='#24272D', font_color='#E1E6ED')
         st.plotly_chart(fig, use_container_width=True)
         recent = sensors[sensors.site_id == selected]
         if not recent.empty:
             st.markdown('**Downloaded high-frequency sensor measurements**')
             sfig = go.Figure(go.Scatter(x=recent.timestamp_local, y=recent.water_temp_C, mode='lines', name='15-minute readings'))
             sfig.update_layout(height=245, yaxis_title='Water temperature (°C)', margin=dict(l=5,r=5,t=8,b=8))
+            sfig.update_layout(template='plotly_dark', paper_bgcolor='#191B20', plot_bgcolor='#24272D', font_color='#E1E6ED')
             st.plotly_chart(sfig, use_container_width=True)
             st.caption(f"Last downloaded sensor timestamp: {recent.timestamp_local.max().tz_convert(TZ)}. These are saved readings, not a continuous live feed.")
         else:
@@ -567,6 +610,7 @@ def main():
                      use_container_width=True)
         bar = go.Figure(go.Bar(x=compared['Stream'], y=compared['% warm days']))
         bar.update_layout(height=350, xaxis_tickangle=-25, yaxis_title='% of measured summer days reaching threshold')
+        bar.update_layout(template='plotly_dark', paper_bgcolor='#191B20', plot_bgcolor='#24272D', font_color='#E1E6ED')
         st.plotly_chart(bar, use_container_width=True)
 
     if page == '🌱 Action Planner':
@@ -654,6 +698,7 @@ def main():
             fig.add_trace(go.Scatter(x=scored.date, y=scored.water_temp_max_C, name='Actual water temperature'))
             fig.add_trace(go.Scatter(x=scored.date, y=scored.ai_prediction_C, name='AI retrospective prediction'))
             fig.update_layout(height=350, yaxis_title='Daily max (°C)')
+            fig.update_layout(template='plotly_dark', paper_bgcolor='#191B20', plot_bgcolor='#24272D', font_color='#E1E6ED')
             st.plotly_chart(fig, use_container_width=True)
             st.caption('Train on earlier ~80% and evaluate on later ~20%, with only prior-day measurements used as predictors. Open-Meteo weather is gridded historical data, not an on-site sensor.')
         else:
