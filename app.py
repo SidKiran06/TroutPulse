@@ -1,4 +1,4 @@
-"""TroutPulse AI — compact, four-file Pennsylvania watershed prototype.
+"""WatershedPulse AI — compact, four-file Pennsylvania watershed prototype.
 
 Run: streamlit run app.py
 Files beside this script: requirements.txt, daily_data.csv, sensor_data.csv.
@@ -169,7 +169,7 @@ def build_map(priorities: dict, window: str, daily: pd.DataFrame, threshold: flo
 
 
 def api_json(url: str, timeout=16):
-    req = Request(url, headers={'User-Agent': 'TroutPulseAI-Educational-Prototype/1.0',
+    req = Request(url, headers={'User-Agent': 'WatershedPulseAI-Educational-Prototype/1.0',
                                 'Accept': 'application/json'})
     with urlopen(req, timeout=timeout) as fp:
         return json.load(fp)
@@ -265,50 +265,108 @@ def main():
     import streamlit as st
     import streamlit.components.v1 as components
 
-    st.set_page_config(page_title='TroutPulse AI', page_icon='🌊', layout='wide')
+    st.set_page_config(page_title='WatershedPulse AI | Pennsylvania', page_icon='🌊', layout='wide', initial_sidebar_state='expanded')
     st.markdown('''<style>
-      .block-container{max-width:1250px;padding-top:1.4rem}
-      .hero{border-radius:18px;padding:24px 28px;color:white;margin-bottom:18px;background:linear-gradient(110deg,#0d3545,#116269)}
-      .hero h1{margin:0;color:white;font-size:42px}.hero p{color:#dbf7f5;margin-bottom:0}
-      .summary-card-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:10px 0 18px 0}
-      .summary-card{background:#123b4b;border-radius:14px;padding:14px 16px;border:1px solid #27576c;min-height:92px}
-      .summary-label{color:#d6eef4;font-size:0.92rem;margin-bottom:8px;font-weight:600}
-      .summary-value{color:#ffffff;font-size:1.5rem;font-weight:800;line-height:1.1}
-      .summary-sub{color:#eaf9ff;font-size:0.86rem;margin-top:6px}
-      div[data-testid="stMetric"]{background:#123b4b;border-radius:12px;padding:14px;border:1px solid #27576c}
-      div[data-testid="stMetric"] label, div[data-testid="stMetric"] div{color:white !important}
-      .tp-section-heading{font-size:1.03rem;font-weight:800;color:#0e6676;letter-spacing:.015em;margin:.3rem 0 .65rem}
-      .tp-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 20px}
-      .tp-feature{background:#123b4b;border:1px solid #2a6074;border-radius:14px;padding:18px 17px;min-height:133px}
-      .tp-feature-title{color:#fff !important;font-size:1.03rem;font-weight:800;margin:0 0 7px}
-      .tp-feature-copy{color:#e5f4f9 !important;font-size:.93rem;line-height:1.45;margin:0}
-      .tp-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#adf4df !important;margin-bottom:9px}
-      .tp-step-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 18px}
-      .tp-step{background:#e8f4f3;color:#173b43;border-radius:12px;border:1px solid #c7e6e3;padding:12px 13px;line-height:1.35}
-      .tp-step b{display:block;color:#0c4a53;margin-bottom:4px;font-size:.92rem}
-      .tp-step span{display:block;color:#24535d;font-size:.85rem}
-      .tp-evidence{border-left:5px solid #087a83;background:#e8f5f6;border-radius:10px;padding:15px 18px;margin:10px 0 18px;color:#183c45}
-      .tp-evidence strong{color:#075663}
-      @media(max-width:850px){.summary-card-row,.tp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-step-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:480px){.summary-card-row,.tp-feature-grid,.tp-step-row{grid-template-columns:1fr}.hero h1{font-size:30px}}
+      :root {--pa-navy:#132D50;--pa-deep:#0B203B;--pa-gold:#E2BA6D;--pa-gold-dark:#A17625;--pa-water:#187A86;--pa-ink:#183450;--pa-pale:#F5F7FB}
+      .stApp {background:var(--pa-pale)}
+      /* Keep ordinary prose readable even when a visitor's Streamlit theme is dark. */
+      div[data-testid="stMain"]{color:#193852}
+      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>p,
+      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>ul,
+      div[data-testid="stMain"] [data-testid="stMarkdownContainer"]>ol{color:#26465e!important}
+      div[data-testid="stMain"] h1,div[data-testid="stMain"] h2,div[data-testid="stMain"] h3{color:#193852}
+      div[data-testid="stMain"] [data-testid="stCaptionContainer"]{color:#526c80!important}
+      div[data-testid="stMain"] a{color:#166777}
+      .block-container{max-width:1250px;padding-top:1.4rem;padding-bottom:2.2rem}
+      /* South Fayette-style left navigation, in a PA flag-inspired palette. */
+      section[data-testid="stSidebar"]{background:linear-gradient(180deg,#102846 0%,#193D64 100%)!important;border-right:3px solid var(--pa-gold)}
+      section[data-testid="stSidebar"] *:not(svg):not(path){color:#F4F8FF}
+      section[data-testid="stSidebar"] div[role="radiogroup"]>label{padding:9px 11px;margin:2px 0;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:background .15s}
+      section[data-testid="stSidebar"] div[role="radiogroup"]>label:hover{background:rgba(255,255,255,.10)}
+      section[data-testid="stSidebar"] div[role="radiogroup"]>label:has(input:checked){background:#355273;border:1px solid #D8B56D;box-shadow:inset 4px 0 0 #E2BA6D}
+      section[data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.24)}
+      section[data-testid="stSidebar"] .side-brand .mini,
+      section[data-testid="stSidebar"] .sidebar-heading{color:#EACA91!important}
+      div[data-testid="stMain"] button[data-testid="stBaseButton-primary"]{background:#173B5D!important;color:white!important;border:1px solid #E2BA6D!important}
+      div[data-testid="stMain"] button[data-testid="stBaseButton-primary"]:hover{background:#245378!important}
+      .side-brand{background:rgba(255,255,255,.06);padding:17px 13px;border:1px solid rgba(226,186,109,.42);border-radius:14px;margin:1px 0 16px}
+      .side-brand .name{font-weight:900;letter-spacing:.015em;font-size:1.4rem;color:white}
+      .side-brand .mini{font-weight:700;font-size:.74rem;color:#EACA91;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+      .side-brand .sub{font-size:.82rem;color:#E4ECF7;line-height:1.45;margin-top:6px}
+      .sidebar-heading{color:#E5BE79;font-size:.72rem;font-weight:800;letter-spacing:.1em;margin:14px 0 6px}
+      .hero{border-radius:18px;padding:26px 30px;color:#FFF;margin-bottom:15px;position:relative;overflow:hidden;background:linear-gradient(110deg,#122C4F,#1B4F66);border-bottom:5px solid #DAB267}
+      .hero:after{content:'◆';position:absolute;right:25px;top:-38px;font-size:8.5rem;color:rgba(229,189,107,.17);pointer-events:none}
+      .hero h1{margin:0;color:#FFF!important;font-size:2.35rem;line-height:1.2;letter-spacing:-.02em}
+      .hero p{color:#DFEBF5!important;margin:.65rem 0 0;max-width:720px}
+      .hero .eyebrow{color:#F6D396!important;font-size:.77rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;margin-bottom:9px}
+      .page-header{margin:8px 0 20px;padding:5px 0 15px;border-bottom:2px solid #E5C27D}
+      .page-header .eyebrow{color:#976B21;font-size:.77rem;font-weight:900;letter-spacing:.13em}
+      .page-header h1{font-size:2rem;color:#183453!important;margin:5px 0!important}
+      .page-header p{color:#50687B!important;font-size:.95rem;margin:0}
+      .summary-card-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:10px 0 23px}
+      .summary-card{background:#142F4E;border:1px solid #325273;border-top:4px solid #E2BA6D;border-radius:12px;padding:15px 16px;min-height:122px}
+      .summary-label{color:#E6EFF9!important;font-size:.86rem;line-height:1.35;font-weight:700}
+      .summary-value{color:white!important;font-size:1.52rem;font-weight:850;line-height:1.2;margin:8px 0}
+      .summary-sub{color:#D4E4F0!important;font-size:.77rem;line-height:1.3}
+      div[data-testid="stMetric"]{background:#142F4E;border-radius:12px;padding:14px;border-top:4px solid #E2BA6D}
+      div[data-testid="stMetric"] label,div[data-testid="stMetric"] div,div[data-testid="stMetric"] p{color:white!important}
+      .tp-section-heading{font-size:1.03rem;font-weight:850;color:#163E64;letter-spacing:.01em;margin:.45rem 0 .7rem}
+      .tp-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:12px 0 23px}
+      .tp-feature{background:#FFF;border:1px solid #DAE3EC;border-top:4px solid #DAB267;border-radius:13px;padding:17px;min-height:145px;box-shadow:0 3px 10px rgba(27,48,72,.05)}
+      .tp-feature-title{color:#183653!important;font-size:1.07rem;font-weight:850;margin:0 0 8px}
+      .tp-feature-copy{color:#4E6478!important;font-size:.90rem;line-height:1.48;margin:0}
+      .tp-tag{display:inline-block;font-size:.7rem;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:#937022!important;margin-bottom:8px}
+      .tp-step-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 20px}
+      .tp-step{background:#EAF1F8;border:1px solid #D2DFEB;color:#173C59;border-radius:12px;padding:13px;line-height:1.4}
+      .tp-step b{display:block;color:#133D64;margin-bottom:5px;font-size:.94rem}
+      .tp-step span{display:block;color:#355D74;font-size:.85rem}
+      .tp-evidence{border-left:5px solid #C69B46;background:#FFF8E9;border-radius:9px;padding:16px 19px;margin:13px 0 20px;color:#334B5A}
+      .tp-evidence strong{color:#5E441F}
+      .resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0 23px}
+      .resource-card{background:#fff;border:1px solid #d7e0eb;border-left:5px solid #DAB267;border-radius:12px;padding:18px 20px;box-shadow:0 4px 14px rgba(20,47,79,.045)}
+      .resource-card .org{font-size:.72rem;letter-spacing:.08em;color:#8C661F!important;text-transform:uppercase;font-weight:850;margin-bottom:5px}
+      .resource-card .title{color:#183653!important;font-size:1.12rem;font-weight:850;margin-bottom:8px}
+      .resource-card .desc{color:#4F6579!important;line-height:1.45;font-size:.90rem}
+      .resource-card a{display:inline-block;color:#12677A!important;margin-top:13px;font-weight:800;text-decoration:none}
+      .resource-card a:hover{text-decoration:underline}
+      @media(max-width:950px){.summary-card-row{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-step-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:620px){.resource-grid{grid-template-columns:1fr}.hero{padding:22px}.hero h1{font-size:1.75rem}}
+      @media(max-width:480px){.summary-card-row,.tp-feature-grid,.tp-step-row{grid-template-columns:1fr}}
     </style>''', unsafe_allow_html=True)
-    st.markdown('<div class="hero"><h1>🌊 TroutPulse AI</h1><p>See stream conditions. Compare monitoring priorities. Plan conservation fieldwork.</p></div>', unsafe_allow_html=True)
     try:
         daily, sensors = load_data()
     except Exception as e:
         st.error(f'Could not load bundled USGS data: {e}')
         st.stop()
-    today = datetime.now().astimezone().date()  # host local day; override with Eastern below
     from zoneinfo import ZoneInfo
     today = datetime.now(ZoneInfo(TZ)).date()
-    st.caption('Eight USGS gauges with measured daily water temperatures. Readings are station-specific and are not a fish-harm diagnosis.')
+    pages = [
+        '🏠 Overview',
+        '🗺️ Watershed Map',
+        '📍 Where to Focus',
+        '📈 Stream Explorer',
+        '🌡️ Thermal Watch',
+        '🌱 Action Planner',
+        '📸 Community Observations',
+        '🧠 Weather & AI',
+        '📚 Pennsylvania Resources',
+        '🔎 Data Sources',
+    ]
     with st.sidebar:
-        st.header('Explore data')
-        threshold = st.slider('Water-temperature screening threshold', 15.0, 26.0, 20.0, 0.5, format='%.1f°C')
-        selected = st.selectbox('Monitoring station', list(STATIONS),
+        st.markdown('''<div class="side-brand"><div class="mini">Pennsylvania · Freshwater Ecosystems</div>
+          <div class="name">🌊 WatershedPulse AI</div>
+          <div class="sub">Explore stream data. Prioritize field checks. Support smarter conservation.</div></div>''', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-heading">APP NAVIGATION</div>', unsafe_allow_html=True)
+        page = st.radio('Explore WatershedPulse', pages, label_visibility='collapsed', key='watershed_page')
+        st.divider()
+        st.markdown('<div class="sidebar-heading">MONITORING SETTINGS</div>', unsafe_allow_html=True)
+        threshold = st.slider('Warm-water screening threshold', 15.0, 26.0, 20.0, .5, format='%.1f°C')
+        selected = st.selectbox('USGS monitoring station', list(STATIONS),
                                 format_func=lambda key: STATIONS[key][0])
-        st.caption('The threshold is an adjustable research screen, not a universal safe limit for fish.')
-        st.markdown('[USGS water data](https://waterdata.usgs.gov/) · [Open-Meteo API](https://open-meteo.com/)')
+        st.caption('The threshold is an adjustable research screen, not a universal limit for freshwater species.')
+        st.divider()
+        st.caption('8 measured USGS sites · Pennsylvania fieldwork prototype')
+        st.markdown('[USGS Water Data](https://waterdata.usgs.gov/explore/)  ·  [PA Fish & Boat](https://www.pa.gov/agencies/fishandboat/conservation)')
 
     station_data = {sid: daily[daily.site_id == sid].copy() for sid in STATIONS}
     forecasts = st.session_state.get('forecasts', {})
@@ -317,20 +375,37 @@ def main():
     compared, common_years = common_summer_comparison(daily, threshold)
     last = station_data[selected].iloc[-1]
     comparison_text = ', '.join(map(str, common_years)) or 'Unavailable'
-    st.markdown(f'''
-    <div class="summary-card-row">
-      <div class="summary-card"><div class="summary-label">Measured stations</div><div class="summary-value">{len(STATIONS)}</div><div class="summary-sub">All eight have verified USGS daily temperatures</div></div>
-      <div class="summary-card"><div class="summary-label">Daily measurements</div><div class="summary-value">{len(daily):,}</div><div class="summary-sub">Daily min, mean, and max water temperatures</div></div>
-      <div class="summary-card"><div class="summary-label">Most recent downloaded day</div><div class="summary-value">{daily.date.max().date()}</div><div class="summary-sub">Saved USGS daily export snapshot</div></div>
-      <div class="summary-card"><div class="summary-label">Fair summer comparison years</div><div class="summary-value">{comparison_text}</div><div class="summary-sub">Only overlapping summers with enough data</div></div>
-    </div>''', unsafe_allow_html=True)
+    if page == '🏠 Overview':
+        st.markdown('''<div class="hero"><div class="eyebrow">Pennsylvania · Citizen science & conservation</div>
+          <h1>WatershedPulse AI</h1><p>Turning measured stream temperatures into clearer monitoring priorities
+          and practical next steps for Pennsylvania's freshwater ecosystems.</p></div>''', unsafe_allow_html=True)
+    else:
+        page_desc = {
+            '🗺️ Watershed Map': 'Eight real USGS monitoring sites, priority markers, and station-level evidence.',
+            '📍 Where to Focus': 'Which monitored sites deserve attention now, next week, or next summer?',
+            '📈 Stream Explorer': 'Study daily water temperatures and available high-frequency readings.',
+            '🌡️ Thermal Watch': 'Compare water-temperature screening results across measured summer dates.',
+            '🌱 Action Planner': 'Translate monitored conditions and field notes into realistic volunteer follow-ups.',
+            '📸 Community Observations': 'Log local field notes for export and later review.',
+            '🧠 Weather & AI': 'Evaluate historical temperature estimates against a simple comparison method.',
+            '📚 Pennsylvania Resources': 'Verified Pennsylvania agencies, programs, and fieldwork guides.',
+            '🔎 Data Sources': 'See measurement provenance, coverage, and what the data represent.',
+        }
+        clean_title = page.split(' ', 1)[1]
+        st.markdown(f'''<div class="page-header"><div class="eyebrow">WATERSHEDPULSE AI · PENNSYLVANIA</div>
+          <h1>{escape(clean_title)}</h1><p>{escape(page_desc.get(page, ''))}</p></div>''',
+          unsafe_allow_html=True)
+    if page in ('🏠 Overview', '🗺️ Watershed Map', '📍 Where to Focus'):
+        st.markdown(f'''
+        <div class="summary-card-row">
+          <div class="summary-card"><div class="summary-label">Measured stations</div><div class="summary-value">{len(STATIONS)}</div><div class="summary-sub">All eight have verified USGS daily temperatures</div></div>
+          <div class="summary-card"><div class="summary-label">Daily measurements</div><div class="summary-value">{len(daily):,}</div><div class="summary-sub">Daily min, mean, and max water temperatures</div></div>
+          <div class="summary-card"><div class="summary-label">Most recent downloaded day</div><div class="summary-value">{daily.date.max().date()}</div><div class="summary-sub">Saved USGS daily export snapshot</div></div>
+          <div class="summary-card"><div class="summary-label">Fair summer comparison years</div><div class="summary-value">{comparison_text}</div><div class="summary-sub">Only overlapping summers with enough data</div></div>
+        </div>''', unsafe_allow_html=True)
 
-    demo_tab, map_tab, focus_tab, explore_tab, thermal_tab, action_tab, obs_tab, model_tab, source_tab = st.tabs([
-        '🎬 Start Here', '🗺️ Map', '📍 Where to Focus', '📈 Stream Explorer', '🌡️ Thermal Watch',
-        '🌱 Action Planner', '📸 Observations', '🧠 Weather & AI', '🔎 Sources'])
-
-    with demo_tab:
-        st.subheader('TroutPulse AI — prototype highlights')
+    if page == '🏠 Overview':
+        st.subheader('WatershedPulse AI — prototype highlights')
         st.write('**Our goal:** Help watershed volunteers know **which monitored stream deserves a closer look, when to visit, and what to check**—using real temperature data rather than guesswork.')
         st.markdown('''<div class="tp-feature-grid">
           <div class="tp-feature"><div class="tp-tag">01 · Explore</div><div class="tp-feature-title">🗺️ Interactive stream map</div><p class="tp-feature-copy">Find eight monitored Pennsylvania streams. Tap a station for temperature evidence and a plain-language monitoring recommendation.</p></div>
@@ -362,7 +437,7 @@ def main():
                 st.metric('Fewest warm-day readings',
                           lowest['Stream'].split(' near ')[0],
                           f"{int(lowest['Warm days'])} of {int(lowest['Days measured'])} summer days", delta_color='off')
-            st.caption(f'Days with a measured daily maximum at or above {threshold:g}°C ({warm_limit_f:.0f}°F), during June–August of {yr}. A flagged temperature does not prove brook trout were present or harmed.')
+            st.caption(f'Days with a measured daily maximum at or above {threshold:g}°C ({warm_limit_f:.0f}°F), during June–August of {yr}. Temperature screening does not establish which species were present or whether habitat was harmed.')
             graph = compared.sort_values('% warm days', ascending=True)
             b = go.Figure(go.Bar(x=graph['% warm days'], y=graph['Stream'], orientation='h',
                                  text=[f"{r['% warm days']:.1f}% ({int(r['Warm days'])}/{int(r['Days measured'])})" for _, r in graph.iterrows()],
@@ -386,7 +461,7 @@ def main():
         st.write('**3. Show the testing:** Open Weather & AI and compare model error against the simple baseline. Explain that the forecast capability is still being improved.')
         st.caption('Currently working: eight-station measured-data comparisons, map, thermal screening, fieldwork suggestions, and session-only volunteer observations. Planned or still being validated: reliable next-day water-temperature forecasts, statewide site-specific planting recommendations, and permanent shared observation storage.')
 
-    with map_tab:
+    if page == '🗺️ Watershed Map':
         st.subheader('Watershed monitoring map')
         period = st.radio('View priorities for', ['Now', 'Next 7 Days', 'Long Term'], horizontal=True, key='mapperiod')
         st.caption('This map is for stream-monitoring decisions. Click a station to see the latest temperature, warm-day history, and what volunteers should investigate next.')
@@ -411,45 +486,47 @@ def main():
         st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
         st.caption('Default basemap is OpenTopoMap so water and terrain are easier to read. Marker colors show monitoring priority, not proof of stream damage or planting locations.')
 
-    with focus_tab:
+    if page == '📍 Where to Focus':
         st.subheader('Where should volunteers focus?')
         st.write('Temperature readings suggest **where to verify conditions**; field assessments determine which conservation projects are appropriate.')
-        pnow, pweek, plong = st.tabs(['Now', 'Next 7 Days', 'Longer Term'])
-        for tab, msg, color in [(pnow, 'now', 'now_type'), (pweek, 'week', 'week_type'),
-                                (plong, 'long', 'long_type')]:
-            with tab:
-                if msg == 'week':
-                    st.info('These are **air-weather** planning signals, not predicted water temperatures.')
-                    if st.button('Fetch 7-day weather for all eight streams', type='primary'):
-                        failures = []
-                        new = dict(forecasts)
-                        with st.spinner('Checking Open-Meteo forecasts...'):
-                            with ThreadPoolExecutor(max_workers=4) as pool:
-                                jobs = {pool.submit(fetch_forecast, sid): sid for sid in STATIONS}
-                                for job in as_completed(jobs):
-                                    sid = jobs[job]
-                                    try:
-                                        new[sid] = job.result()[0]
-                                    except Exception as exc:
-                                        failures.append(f'{STATIONS[sid][0]}: {exc}')
-                        st.session_state['forecasts'] = new
-                        st.session_state['forecast_errors'] = failures
-                        st.rerun()
-                    for error in st.session_state.get('forecast_errors', []):
-                        st.warning(error[:200])
-                order = {'check': 0, 'plan': 1, 'stale': 2, 'routine': 3, 'missing': 4}
-                records = sorted(STATIONS, key=lambda sid: (order[priorities[sid][color]],
-                             -(priorities[sid].get('summer_pct') or 0)))
-                for sid in records:
-                    with st.container(border=True):
-                        st.markdown(f'**{STATIONS[sid][0]}**')
-                        st.write(priorities[sid][msg])
-                        if msg == 'now':
-                            st.caption(f"Last measured daily maximum: {priorities[sid]['latest']:.1f}°C on {priorities[sid]['latest_date']}. Not necessarily today's temperature.")
-                if msg == 'long':
-                    st.caption('Warmer stations deserve closer *investigation*, not automatic tree planting. Managed rivers and different habitat types require additional evidence.')
+        view = st.selectbox('Choose a planning time frame', ['Now', 'Next 7 Days', 'Longer Term'], key='focus_period')
+        msg, color = {
+            'Now': ('now', 'now_type'),
+            'Next 7 Days': ('week', 'week_type'),
+            'Longer Term': ('long', 'long_type'),
+        }[view]
+        if msg == 'week':
+            st.info('These are **air-weather** planning signals, not predicted water temperatures.')
+            if st.button('Fetch 7-day weather for all eight streams', type='primary'):
+                failures = []
+                new = dict(forecasts)
+                with st.spinner('Checking Open-Meteo forecasts...'):
+                    with ThreadPoolExecutor(max_workers=4) as pool:
+                        jobs = {pool.submit(fetch_forecast, sid): sid for sid in STATIONS}
+                        for job in as_completed(jobs):
+                            sid = jobs[job]
+                            try:
+                                new[sid] = job.result()[0]
+                            except Exception as exc:
+                                failures.append(f'{STATIONS[sid][0]}: {exc}')
+                st.session_state['forecasts'] = new
+                st.session_state['forecast_errors'] = failures
+                st.rerun()
+            for error in st.session_state.get('forecast_errors', []):
+                st.warning(error[:200])
+        order = {'check': 0, 'plan': 1, 'stale': 2, 'routine': 3, 'missing': 4}
+        records = sorted(STATIONS, key=lambda sid: (order[priorities[sid][color]],
+                     -(priorities[sid].get('summer_pct') or 0)))
+        for sid in records:
+            with st.container(border=True):
+                st.markdown(f'**{STATIONS[sid][0]}**')
+                st.write(priorities[sid][msg])
+                if msg == 'now':
+                    st.caption(f"Last measured daily maximum: {priorities[sid]['latest']:.1f}°C on {priorities[sid]['latest_date']}. Not necessarily today's temperature.")
+        if msg == 'long':
+            st.caption('Warmer stations deserve closer *investigation*, not automatic tree planting. Managed rivers and different habitat types require additional evidence.')
 
-    with explore_tab:
+    if page == '📈 Stream Explorer':
         st.subheader('Stream Explorer')
         chosen = station_data[selected]
         st.write(f'**{STATIONS[selected][0]}** · {len(chosen):,} measured days · {chosen.date.min().date()} to {chosen.date.max().date()}')
@@ -473,7 +550,7 @@ def main():
         else:
             st.caption('No recent 15-minute sensor export bundled for this station; the daily readings above are verified.')
 
-    with thermal_tab:
+    if page == '🌡️ Thermal Watch':
         st.subheader('Thermal Watch')
         st.write(f'Days with a **daily maximum at or above {threshold:g}°C** are flagged for closer review. A flagged day does not prove fish were present or harmed.')
         sample = station_data[selected].copy()
@@ -492,7 +569,7 @@ def main():
         bar.update_layout(height=350, xaxis_tickangle=-25, yaxis_title='% of measured summer days reaching threshold')
         st.plotly_chart(bar, use_container_width=True)
 
-    with action_tab:
+    if page == '🌱 Action Planner':
         st.subheader('Conservation Action Planner')
         st.write('This combines temperature screening with **volunteer field observations** to suggest what to investigate, not to authorize restoration work.')
         c1, c2 = st.columns(2)
@@ -506,14 +583,14 @@ def main():
             st.caption('Input notes are unverified until field partners review them.')
         notes = {'shade': shade, 'erosion': erosion, 'cool': cool, 'clarity': clarity, 'litter': litter}
         advice = recommended_actions(priorities[selected], notes)
-        st.markdown(f"**Current temperature screen:** {priorities[selected]['now']}")
+        st.markdown(f"**Station screening result:** {priorities[selected]['now']}")
         for title, explanation in advice:
             with st.container(border=True):
                 st.markdown('**' + title + '**')
                 st.write(explanation)
         st.caption('Tree planting, habitat construction, or stream alterations require site suitability, landowner permission, and sometimes professional design or permits.')
 
-    with obs_tab:
+    if page == '📸 Community Observations':
         st.subheader('Community Observations')
         st.write('Record field notes, fish sightings, stream clarity, and erosion. This prototype keeps reports **only for the current browser session**; export CSV to save them.')
         if 'observations' not in st.session_state:
@@ -542,11 +619,11 @@ def main():
             obs = pd.DataFrame(st.session_state.observations)
             st.dataframe(obs, hide_index=True, use_container_width=True)
             st.download_button('Export observation log (CSV)', obs.to_csv(index=False).encode('utf-8'),
-                               'troutpulse_observations.csv', 'text/csv')
+                               'watershedpulse_observations.csv', 'text/csv')
         else:
             st.info('No observations entered in this session yet.')
 
-    with model_tab:
+    if page == '🧠 Weather & AI':
         st.subheader('Weather integration and AI validation')
         st.write('The app can retrieve **historical weather** to test whether a model improves on a simple water-temperature baseline. It does not claim a validated live stream-temperature forecast.')
         if st.button('Fetch historical weather and evaluate model for selected stream', type='primary'):
@@ -587,11 +664,39 @@ def main():
                     st.markdown(f"**{STATIONS[sid][0]}**")
                     st.dataframe(table, hide_index=True, use_container_width=True)
 
-    with source_tab:
+    if page == '📚 Pennsylvania Resources':
+        st.markdown('**Explore trusted Pennsylvania guidance for monitoring, habitat protection, and volunteer projects.**')
+        st.write('These are external public resources. WatershedPulse helps volunteers decide what to investigate; landowners, conservation districts, and specialists decide whether a physical project is appropriate.')
+        resources = [
+            ('Monitoring & data', 'USGS Water Data for the Nation', 'Explore official monitoring stations and confirm dates, measured parameters, and recent readings.', 'https://waterdata.usgs.gov/explore/'),
+            ('Fish & aquatic habitat', 'PA Fish and Boat Commission — Habitat Management', 'Learn about stream and lake habitats, aquatic biodiversity, and professionally planned habitat improvements.', 'https://www.pa.gov/agencies/fishandboat/conservation/habitat-management'),
+            ('Riparian buffers', 'PA DCNR — Forest Buffers Along Waterways', 'Understand how native streamside vegetation filters runoff, reduces erosion, and provides shade and wildlife habitat.', 'https://www.pa.gov/agencies/dcnr/conservation/water/riparian-buffers'),
+            ('Fieldwork & volunteering', 'Penn State — Master Watershed Stewards', 'Explore training and volunteer programs for stream cleanups, water-quality checks, education, and buffer planting.', 'https://extension.psu.edu/programs/watershed-stewards/about'),
+            ('Habitat assistance', 'PA Fish and Boat — Technical Assistance', 'Find guidance on planning aquatic habitat and riparian corridor improvement with trained partners.', 'https://www.pa.gov/services/fishandboat/technical-assistance-program'),
+            ('Environmental reporting', 'PA DEP — Report Incidents and Complaints', 'For suspected pollution or environmental incidents, use the official reporting process rather than relying on the app.', 'https://www.pa.gov/agencies/dep/report-incidents-and-complaints'),
+            ('Species & stewardship', 'PA Fish and Boat — Aquatic Habitats & Watersheds', 'Explore educational materials about Pennsylvania freshwater food webs, watersheds, and healthy stream conditions.', 'https://www.pa.gov/agencies/fishandboat/education/activities-education-portal/habitat-watersheds-pollution'),
+            ('Funding & support', 'PA Fish and Boat — Cooperative Habitat Improvement', 'Learn how community groups and landowners can seek technical help with qualifying habitat restoration.', 'https://www.pa.gov/services/fishandboat/cooperative-habitat-improvement-program'),
+        ]
+        topic = st.selectbox('Find resources about', ['All resources', 'Monitoring & data', 'Fish & aquatic habitat', 'Riparian buffers', 'Fieldwork & volunteering', 'Habitat assistance', 'Environmental reporting', 'Species & stewardship', 'Funding & support'])
+        shown = [r for r in resources if topic == 'All resources' or r[0] == topic]
+        cols = st.columns(2)
+        for i, (category, title, description, url) in enumerate(shown):
+            with cols[i % 2]:
+                st.markdown(f'''<div class="resource-card"><div class="org">{escape(category)}</div>
+                  <div class="title">{escape(title)}</div><div class="desc">{escape(description)}</div>
+                  <a href="{escape(url)}" target="_blank" rel="noopener noreferrer">Explore official resource ↗</a></div>''', unsafe_allow_html=True)
+        st.markdown('**A responsible fieldwork workflow**')
+        st.markdown('1. **Check measurements:** Use USGS data to identify temperature patterns.\n'
+                    '2. **Verify on site:** Measure shade, tributary temperatures, water clarity, and bank conditions safely.\n'
+                    '3. **Ask local partners:** Discuss findings with a watershed group, conservation district, or PFBC/DCNR specialist.\n'
+                    '4. **Plan appropriate work:** Consider native buffers, monitoring, or cleanups only after confirming site needs and permissions.')
+        st.info('Current app scope: temperature records at eight stream/river monitoring stations. This does not measure whole watersheds or individual lakes.')
+
+    if page == '🔎 Data Sources':
         st.subheader('Data sources and limitations')
         st.write('**USGS:** Water-temperature parameter 00010, daily maximum 00001, daily minimum 00002, daily mean 00003, supplied as official USGS downloads. Recent sensor readings are bundled for three stations only.')
         st.write('**Weather:** Open-Meteo historical archive and air-temperature forecast APIs are accessed when requested; weather data are not bundled in these four files.')
-        st.write('**Important:** A monitoring gauge describes one location, not a whole river. A 20°C threshold is an exploratory screen, not proof of brook trout presence or injury. Managed rivers need separate interpretation.')
+        st.write('**Important:** A monitoring gauge describes one location, not a whole river. A 20°C threshold is an exploratory screen, not a fish-health diagnosis or proof of habitat damage. Managed rivers need separate interpretation.')
         manifest = []
         for sid, data in station_data.items():
             manifest.append({'Station': STATIONS[sid][0], 'USGS ID': sid,
@@ -601,10 +706,10 @@ def main():
                              'Source': f'https://waterdata.usgs.gov/monitoring-location/{sid}/'})
         st.dataframe(pd.DataFrame(manifest), hide_index=True, use_container_width=True)
         st.download_button('Export verified daily measurements', daily.to_csv(index=False).encode('utf-8'),
-                           file_name='troutpulse_daily_export.csv', mime='text/csv')
+                           file_name='watershedpulse_daily_export.csv', mime='text/csv')
         st.write('**Relevant conservation background:** [Penn State Extension riparian buffers](https://extension.psu.edu/what-are-riparian-buffers) · [PA DCNR riparian buffers](https://www.pa.gov/agencies/dcnr/conservation/water/riparian-buffers) · [PA Trout Unlimited](https://patrout.org/)')
     st.divider()
-    st.caption('TroutPulse AI • Educational prototype • Evidence-based monitoring suggestions, not official conservation orders')
+    st.caption('WatershedPulse AI • Pennsylvania freshwater ecosystem prototype • Fieldwork screening, not official restoration advice')
 
 
 if __name__ == '__main__':
