@@ -261,6 +261,83 @@ def recommended_actions(pr: dict, notes: dict):
     return tasks
 
 
+def build_volunteer_plan(pr: dict, notes: dict, station_name: str, threshold: float):
+    """Create an evidence-linked fieldwork plan; never infer a restoration site from one gauge."""
+    current = pr.get('now_type')
+    seasonal = pr.get('summer_pct')
+    if current == 'check':
+        when = 'Check current conditions soon'
+        reason = ('Recent measured water temperatures crossed the selected screening threshold. '
+                  'Arrange a safe, permitted follow-up near the monitoring station.')
+    elif current in ('stale', 'missing'):
+        when = 'Refresh records before setting an urgent priority'
+        reason = ('The latest available measurement is old or missing. Confirm current USGS readings '
+                  'before describing conditions as urgent.')
+    elif seasonal is not None and seasonal >= 25:
+        when = 'Plan ahead for the next warm season'
+        reason = (f'{seasonal:.0f}% of adequately sampled historical summer days reached the '
+                  f'{threshold:g}°C screening threshold at this gauge. This is a seasonal '
+                  'field-check priority, not a current emergency.')
+    else:
+        when = 'Continue routine monitoring'
+        reason = ('No recent heat flag is shown at this gauge. Keep records current and '
+                  'watch for changing weather or conditions.')
+    what = [
+        'Confirm the latest USGS reading and record its date before visiting.',
+        'If safe and permitted, compare water temperature at the gauge, an accessible upstream '
+        'and downstream point, and any nearby tributary at the same time.',
+        'Photograph and record streamside shade, water clarity, eroding banks, and visible runoff; '
+        'note weather and sampling time.',
+        'With trained volunteers, consider dissolved oxygen, pH, and turbidity measurements; '
+        'record actual values rather than assuming they are abnormal.',
+    ]
+    if notes.get('cool') == 'Possible cooler tributary':
+        what.append('Repeat paired main-stream and tributary temperature checks on several warm days '
+                    'to see whether the inflow is consistently cooler.')
+    if notes.get('shade') == 'Few streamside trees':
+        what.append('Document the length of any sparsely shaded bank and gather landowner and '
+                    'site information before discussing riparian planting.')
+    if notes.get('erosion') == 'Active erosion':
+        what.append('Document erosion safely with location and photographs; do not enter unstable banks.')
+    if notes.get('clarity') == 'Unusually cloudy':
+        what.append('Compare visible cloudiness with rainfall and possible runoff sources; consider '
+                    'a trained turbidity measurement.')
+    if notes.get('clarity') == 'Possible pollution or fish kill':
+        what.insert(0, 'Potential urgent concern: stay clear of suspicious water, document from safety, '
+                    'and promptly contact Pennsylvania DEP or the appropriate authorities.')
+    projects = []
+    if notes.get('shade') == 'Few streamside trees':
+        projects.append(('Riparian buffer assessment',
+                         'With landowner approval and a conservation partner, assess native trees/shrubs '
+                         'to add shade, stabilize banks, filter runoff, and support aquatic habitat.'))
+    if notes.get('cool') == 'Possible cooler tributary':
+        projects.append(('Cold-water habitat protection',
+                         'If repeated readings verify cooler water, discuss protecting the tributary '
+                         'inflow and connected fish habitat with local specialists.'))
+    if notes.get('erosion') == 'Active erosion':
+        projects.append(('Streambank and sediment assessment',
+                         'Refer the location to a conservation district for appropriate bank and '
+                         'sediment-control options; do not build in the stream independently.'))
+    if notes.get('clarity') == 'Unusually cloudy':
+        projects.append(('Runoff and water-quality follow-up',
+                         'Discuss further turbidity and runoff-source checks before choosing any '
+                         'stormwater or erosion project.'))
+    if notes.get('litter'):
+        projects.append(('Coordinated cleanup',
+                         'Ask a watershed group or landowner about an approved litter cleanup or '
+                         'trained invasive-plant workday.'))
+    if notes.get('clarity') == 'Possible pollution or fish kill':
+        projects.insert(0, ('Prompt environmental reporting',
+                            'Contact the proper environmental agency. Do not sample or clean up '
+                            'suspected contamination without professional direction.'))
+    if not projects:
+        projects.append(('Monitoring and habitat review',
+                         'Use field measurements first. If a specific concern is confirmed, '
+                         'ask a conservation partner which project, if any, is suitable.'))
+    return {'where': station_name, 'when': when, 'why': reason,
+            'measure': what, 'projects': projects}
+
+
 def main():
     import streamlit as st
     import streamlit.components.v1 as components
@@ -398,6 +475,8 @@ def main():
     page = st.session_state['nav_page']
 
     # Larger monitoring controls live in a popover so they never block the dashboard.
+    if 'pending_station' in st.session_state:
+        st.session_state['selected_station'] = st.session_state.pop('pending_station')
     bar_left, bar_right = st.columns([3.5, 1.3], vertical_alignment='center')
     with bar_left:
         st.markdown('<div class="topline"><b>PA</b> / FRESHWATER INTELLIGENCE</div>', unsafe_allow_html=True)
@@ -451,7 +530,7 @@ def main():
           <div class="tp-feature"><div class="tp-tag">01 · Explore</div><div class="tp-feature-title">🗺️ Interactive stream map</div><p class="tp-feature-copy">Find eight monitored Pennsylvania streams. Tap a station for temperature evidence and a plain-language monitoring recommendation.</p></div>
           <div class="tp-feature"><div class="tp-tag">02 · Understand</div><div class="tp-feature-title">🌡️ Thermal Watch</div><p class="tp-feature-copy">Compare summer days reaching the selected water-temperature threshold. Find patterns worth checking, not diagnoses of fish health.</p></div>
           <div class="tp-feature"><div class="tp-tag">03 · Prioritize</div><div class="tp-feature-title">📍 Where to Focus</div><p class="tp-feature-copy">Separate recent concerns, next-week weather-based monitoring plans, and longer-term summer investigations.</p></div>
-          <div class="tp-feature"><div class="tp-tag">04 · Plan</div><div class="tp-feature-title">🌱 Conservation Action Planner</div><p class="tp-feature-copy">Turn data and field observations into suggestions such as checking shade, cooler tributaries, streambank erosion, or possible riparian buffers.</p></div>
+          <div class="tp-feature"><div class="tp-tag">04 · Act on evidence</div><div class="tp-feature-title">🌱 Conservation Action Planner</div><p class="tp-feature-copy">Get three clear answers: where to investigate, what to measure during a visit, and which conservation projects may deserve expert review.</p></div>
           <div class="tp-feature"><div class="tp-tag">05 · Record</div><div class="tp-feature-title">📸 Community Observations</div><p class="tp-feature-copy">Log fish sightings, water clarity, erosion, and field notes. Export the log as a CSV; entries are not shared or permanently stored yet.</p></div>
           <div class="tp-feature"><div class="tp-tag">06 · Test</div><div class="tp-feature-title">🧠 Weather & AI</div><p class="tp-feature-copy">Combine water and weather data to test next-day estimates, then compare the AI model with a simpler prediction method.</p></div>
         </div>''', unsafe_allow_html=True)
@@ -498,7 +577,7 @@ def main():
             st.info('A fair summer comparison requires enough shared summer dates across all eight stations.')
         st.markdown('**Quick TV demonstration (three steps)**')
         st.write('**1. Show the finding:** Point to the warm-day comparison above, then open Map and tap a station.')
-        st.write('**2. Show the decision:** Open Where to Focus and Action Planner. Select few streamside trees or a possible cool tributary to show how suggested field checks change.')
+        st.write('**2. Show the action:** Choose a station, open Action Planner, and show the three outputs: where to investigate, what to measure, and which projects to evaluate. Select few streamside trees to show how the field plan changes.')
         st.write('**3. Show the testing:** Open Weather & AI and compare model error against the simple baseline. Explain that the forecast capability is still being improved.')
         st.caption('Currently working: eight-station measured-data comparisons, map, thermal screening, fieldwork suggestions, and session-only volunteer observations. Planned or still being validated: reliable next-day water-temperature forecasts, statewide site-specific planting recommendations, and permanent shared observation storage.')
 
@@ -529,7 +608,7 @@ def main():
 
     if page == '📍 Where to Focus':
         st.subheader('Where should volunteers focus?')
-        st.write('Temperature readings suggest **where to verify conditions**; field assessments determine which conservation projects are appropriate.')
+        st.write('Use this list to choose **where and when to collect additional evidence**. For each location, open the Action Planner to see what volunteers can measure and what projects might merit expert assessment.')
         view = st.selectbox('Choose a planning time frame', ['Now', 'Next 7 Days', 'Longer Term'], key='focus_period')
         msg, color = {
             'Now': ('now', 'now_type'),
@@ -564,6 +643,10 @@ def main():
                 st.write(priorities[sid][msg])
                 if msg == 'now':
                     st.caption(f"Last measured daily maximum: {priorities[sid]['latest']:.1f}°C on {priorities[sid]['latest_date']}. Not necessarily today's temperature.")
+                if st.button('View volunteer field plan', key=f'open_plan_{view}_{sid}'):
+                    st.session_state['pending_station'] = sid
+                    st.session_state['nav_page'] = '🌱 Action Planner'
+                    st.rerun()
         if msg == 'long':
             st.caption('Warmer stations deserve closer *investigation*, not automatic tree planting. Managed rivers and different habitat types require additional evidence.')
 
@@ -614,25 +697,52 @@ def main():
         st.plotly_chart(bar, use_container_width=True)
 
     if page == '🌱 Action Planner':
-        st.subheader('Conservation Action Planner')
-        st.write('This combines temperature screening with **volunteer field observations** to suggest what to investigate, not to authorize restoration work.')
-        c1, c2 = st.columns(2)
-        with c1:
-            shade = st.selectbox('Streamside shade', ['Not checked','Few streamside trees','Plenty of shade'])
-            erosion = st.selectbox('Streambank erosion', ['Not checked','No clear erosion','Active erosion'])
-            cool = st.selectbox('Tributary or spring', ['Not checked','Possible cooler tributary','None identified'])
-        with c2:
-            clarity = st.selectbox('Water clarity', ['Not checked','Looks clear','Unusually cloudy','Possible pollution or fish kill'])
-            litter = st.checkbox('Litter or invasive plants observed')
-            st.caption('Input notes are unverified until field partners review them.')
+        st.subheader('From stream data to practical volunteer work')
+        st.write('**Three questions guide each visit:** Where should we investigate? What should we measure? Which ecosystem projects could be evaluated after the evidence is reviewed?')
+        st.caption(f'Selected monitoring site: {STATIONS[selected][0]} · USGS {selected}. Change the stream using ⚙️ Filters.')
+        with st.expander('Add volunteer observations to tailor the plan', expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                shade = st.selectbox('Streamside shade', ['Not checked','Few streamside trees','Plenty of shade'])
+                erosion = st.selectbox('Streambank erosion', ['Not checked','No clear erosion','Active erosion'])
+                cool = st.selectbox('Tributary or spring', ['Not checked','Possible cooler tributary','None identified'])
+            with c2:
+                clarity = st.selectbox('Water clarity', ['Not checked','Looks clear','Unusually cloudy','Possible pollution or fish kill'])
+                litter = st.checkbox('Litter or invasive plants observed')
+                st.caption('These are optional field observations entered by the user; they have not been independently verified.')
         notes = {'shade': shade, 'erosion': erosion, 'cool': cool, 'clarity': clarity, 'litter': litter}
-        advice = recommended_actions(priorities[selected], notes)
-        st.markdown(f"**Station screening result:** {priorities[selected]['now']}")
-        for title, explanation in advice:
-            with st.container(border=True):
-                st.markdown('**' + title + '**')
-                st.write(explanation)
-        st.caption('Tree planting, habitat construction, or stream alterations require site suitability, landowner permission, and sometimes professional design or permits.')
+        plan = build_volunteer_plan(priorities[selected], notes, STATIONS[selected][0], threshold)
+        with st.container(border=True):
+            st.markdown('### 📍 1. Where and when to investigate')
+            st.markdown(f"**{plan['where']}** — {plan['when']}")
+            st.write(plan['why'])
+            st.caption(f"Latest downloaded daily maximum: {priorities[selected]['latest']:.1f}°C on {priorities[selected]['latest_date']} (gauge location only).")
+        with st.container(border=True):
+            st.markdown('### 🧪 2. What volunteers should measure')
+            for item in plan['measure']:
+                st.markdown(f'- {item}')
+        with st.container(border=True):
+            st.markdown('### 🌿 3. Which conservation projects to evaluate')
+            for title, detail in plan['projects']:
+                st.markdown(f'**{title}**')
+                st.write(detail)
+            st.caption('Projects are options for review, not approved planting sites or guaranteed remedies. Physical work may require landowner permission, permits, and trained specialists.')
+        st.markdown('**How this could help the ecosystem**')
+        st.write('Better information can help community partners protect cooler habitats, target native streamside buffers where suitable, limit sediment and runoff, and support aquatic insects, fish, and connected freshwater food webs. These are potential benefits of appropriately chosen projects, not measured results of this prototype.')
+        field_sheet = [
+            'WATERSHEDPULSE AI — VOLUNTEER FIELDWORK PLANNING SHEET',
+            f"Station: {STATIONS[selected][0]} ({selected})",
+            f"Screening threshold: {threshold:g} C | Measurement date: {priorities[selected]['latest_date']}",
+            f"When: {plan['when']}", f"Reason: {plan['why']}", '',
+            'FIELD CHECKLIST (record actual values, dates, locations, and permissions):',
+            *[f'[ ] {item}' for item in plan['measure']], '',
+            'OPTIONS FOR CONSERVATION PARTNER REVIEW:',
+            *[f'- {title}: {detail}' for title, detail in plan['projects']], '',
+            'Field observations are not verified. A gauge measures one location, not an entire stream.',
+        ]
+        st.download_button('Download volunteer field checklist', '\n'.join(field_sheet).encode('utf-8'),
+                           file_name='watershedpulse_field_checklist.txt', mime='text/plain')
+        st.caption('Fieldwork should be safe and permitted. Contact Pennsylvania DEP or relevant officials promptly for suspected pollution or a fish kill.')
 
     if page == '📸 Community Observations':
         st.subheader('Community Observations')
@@ -730,11 +840,11 @@ def main():
                 st.markdown(f'''<div class="resource-card"><div class="org">{escape(category)}</div>
                   <div class="title">{escape(title)}</div><div class="desc">{escape(description)}</div>
                   <a href="{escape(url)}" target="_blank" rel="noopener noreferrer">Explore official resource ↗</a></div>''', unsafe_allow_html=True)
-        st.markdown('**A responsible fieldwork workflow**')
-        st.markdown('1. **Check measurements:** Use USGS data to identify temperature patterns.\n'
-                    '2. **Verify on site:** Measure shade, tributary temperatures, water clarity, and bank conditions safely.\n'
-                    '3. **Ask local partners:** Discuss findings with a watershed group, conservation district, or PFBC/DCNR specialist.\n'
-                    '4. **Plan appropriate work:** Consider native buffers, monitoring, or cleanups only after confirming site needs and permissions.')
+        st.markdown('**How volunteers turn information into ecosystem protection**')
+        st.markdown('1. **Choose where to investigate:** Use measured stream temperatures to prioritize a gauge and a safe, permitted site.\n'
+                    '2. **Know what to measure:** Record stream temperature, possible cooler inflows, shade, erosion, and water clarity; trained teams can test dissolved oxygen, pH, and turbidity.\n'
+                    '3. **Review possible projects:** Discuss riparian buffers, protecting cold-water habitats, runoff reduction, or cleanup with watershed groups and conservation specialists.\n'
+                    '4. **Check outcomes over time:** Repeat measurements after an approved project to see whether conditions changed.')
         st.info('Current app scope: temperature records at eight stream/river monitoring stations. This does not measure whole watersheds or individual lakes.')
 
     if page == '🔎 Data Sources':
